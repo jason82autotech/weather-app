@@ -49,7 +49,7 @@ You are required to submit BOTH of the following for review:
 Here is a screenshot of the deployed application 
     ![image of deployed application](./assets/images/weather-app-screenshot.png)
 
-All work is my own with the help of the awesome tutors and classmates I have! I also used Google, You Tube, MDN Docs, W3 Schools and any other resource I could find on the web. Not sure why GitHub won't read my files!
+All work is my own with the help of the awesome tutors and classmates I have! I also used Google, You Tube, MDN Docs, W3 Schools, Chat GPT, Cody Ai, and any other resource I could find on the web. 
 
 
 

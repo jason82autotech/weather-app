@@ -25,14 +25,13 @@ const loadSearchHistory = () => {
 
 // Display current weather conditions
 const displayCurrentWeather = (response, cityName) => {
-  const { coord, current } = response;
-  const { lon, lat } = coord;
+  const { current } = response;
 
   const currentTitle = $("#current-title");
   currentTitle.text(`${cityName} (${moment().format("M/D/YYYY")})`);
 
   const currentIcon = $("#current-weather-icon");
-  currentIcon.attr("src", `https://openweathermap.org/img/wn/${current.weather[0].icon}@2x.png`);
+  currentIcon.attr("src", `https://openweathermap.org/img/wn/${current.weather[0].icon}.png`);
 
   const currentTemperature = $("#current-temperature");
   currentTemperature.text(`Temperature: ${current.temp} °F`);
@@ -63,19 +62,21 @@ const displayFiveDayForecast = (response) => {
   const futureForecastTitle = $("#future-forecast-title");
   futureForecastTitle.text("5-Day Forecast:");
 
-  for (let i = 1; i <= 5; i++) {
-    const futureDate = $(`#future-date-${i}`);
-    futureDate.text(moment().add(i, "d").format("M/D/YYYY"));
+  const dailyForecasts = response.daily.slice(1, 6); // Only take next 5 days
 
-    const futureIcon = $(`#future-icon-${i}`);
-    futureIcon.attr("src", `https://openweathermap.org/img/wn/${response.daily[i].weather[0].icon}@2x.png`);
+  dailyForecasts.forEach((forecast, i) => {
+    const futureDate = $(`#future-date-${i + 1}`);
+    futureDate.text(moment.unix(forecast.dt).format("M/D/YYYY"));
 
-    const futureTemp = $(`#future-temp-${i}`);
-    futureTemp.text(`Temp: ${response.daily[i].temp.day} °F`);
+    const futureIcon = $(`#future-icon-${i + 1}`);
+    futureIcon.attr("src", `https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`);
 
-    const futureHumidity = $(`#future-humidity-${i}`);
-    futureHumidity.text(`Humidity: ${response.daily[i].humidity}%`);
-  }
+    const futureTemp = $(`#future-temp-${i + 1}`);
+    futureTemp.text(`Temp: ${forecast.temp.day} °F`);
+
+    const futureHumidity = $(`#future-humidity-${i + 1}`);
+    futureHumidity.text(`Humidity: ${forecast.humidity}%`);
+  });
 };
 
 // Fetch current weather data and display it
@@ -84,15 +85,14 @@ const fetchAndDisplayCurrentWeather = (cityName) => {
     .then(response => response.json())
     .then(response => {
       const { coord } = response;
-      const { lon, lat } = coord;
 
-      fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&units=imperial&appid=${apiKey}`)
+      fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${coord.lat}&lon=${coord.lon}&exclude=minutely,hourly,alerts&units=imperial&appid=${apiKey}`)
         .then(response => response.json())
-        .then(response => {
-          displayCurrentWeather(response, cityName);
+        .then(data => {
+          displayCurrentWeather(data, cityName);
           createSearchHistoryEntry(cityName);
           saveSearchHistory();
-          displayFiveDayForecast(response);
+          displayFiveDayForecast(data);
         });
     })
     .catch((err) => {
@@ -103,12 +103,13 @@ const fetchAndDisplayCurrentWeather = (cityName) => {
 // Event listener for the search form submission
 $("#search-form").on("submit", function (event) {
   event.preventDefault();
-  const cityName = $("#search-input").val();
+  const cityName = $("#search-input").val().trim();
 
-  if (cityName === "" || cityName == null) {
+  if (cityName === "") {
     alert("Please enter the name of a city.");
   } else {
     fetchAndDisplayCurrentWeather(cityName);
+    $(this)[0].reset(); // Clear the input field after submission
   }
 });
 
