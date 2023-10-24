@@ -1,5 +1,5 @@
 // Global variables
-const apiKey = "1b18ce13c84e21faafb19c931bb29331";
+const apiKey = "07990665a4fcd6b5ff1bda4694aeda80";
 let savedSearches = [];
 
 // Create a search history entry
