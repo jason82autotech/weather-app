@@ -1,12 +1,26 @@
-// Global variables
+// Constants
 const apiKey = "07990665a4fcd6b5ff1bda4694aeda80";
+const searchHistoryContainer = $("#search-history-container");
+const currentTitle = $("#current-title");
+const currentIcon = $("#current-weather-icon");
+const currentTemperature = $("#current-temperature");
+const currentHumidity = $("#current-humidity");
+const currentWindSpeed = $("#current-wind-speed");
+const currentUvIndex = $("#current-uv-index");
+const currentNumber = $("#current-number");
+const futureForecastTitle = $("#future-forecast-title");
+
 let savedSearches = [];
 
 // Create a search history entry
 const createSearchHistoryEntry = (cityName) => {
-  const searchHistoryEntry = $('<p>').addClass("past-search").text(cityName);
-  const searchEntryContainer = $('<div>').addClass("past-search-container").append(searchHistoryEntry);
-  $("#search-history-container").append(searchEntryContainer);
+  const searchHistoryEntry = $('<p>')
+    .addClass("past-search")
+    .text(cityName);
+  const searchEntryContainer = $('<div>')
+    .addClass("past-search-container")
+    .append(searchHistoryEntry);
+  searchHistoryContainer.append(searchEntryContainer);
 };
 
 // Save the search history
@@ -19,34 +33,21 @@ const loadSearchHistory = () => {
   const savedSearchHistory = localStorage.getItem("savedSearches");
   if (savedSearchHistory) {
     savedSearches = JSON.parse(savedSearchHistory);
-    savedSearches.forEach(cityName => createSearchHistoryEntry(cityName));
+    savedSearches.forEach(createSearchHistoryEntry);
   }
 };
 
 // Display current weather conditions
-const displayCurrentWeather = (response, cityName) => {
-  const { current } = response;
-
-  const currentTitle = $("#current-title");
+const displayCurrentWeather = ({ current }, cityName) => {
   currentTitle.text(`${cityName} (${moment().format("M/D/YYYY")})`);
-
-  const currentIcon = $("#current-weather-icon");
   currentIcon.attr("src", `https://openweathermap.org/img/wn/${current.weather[0].icon}.png`);
-
-  const currentTemperature = $("#current-temperature");
   currentTemperature.text(`Temperature: ${current.temp} °F`);
-
-  const currentHumidity = $("#current-humidity");
   currentHumidity.text(`Humidity: ${current.humidity}%`);
-
-  const currentWindSpeed = $("#current-wind-speed");
   currentWindSpeed.text(`Wind Speed: ${current.wind_speed} MPH`);
-
-  const currentUvIndex = $("#current-uv-index");
   currentUvIndex.text("UV Index: ");
-
-  const currentNumber = $("#current-number");
   currentNumber.text(current.uvi);
+  
+  currentNumber.removeClass("favorable moderate severe"); // Reset class
 
   if (current.uvi <= 2) {
     currentNumber.addClass("favorable");
@@ -58,24 +59,16 @@ const displayCurrentWeather = (response, cityName) => {
 };
 
 // Display the 5-day forecast
-const displayFiveDayForecast = (response) => {
-  const futureForecastTitle = $("#future-forecast-title");
+const displayFiveDayForecast = ({ daily }) => {
   futureForecastTitle.text("5-Day Forecast:");
 
-  const dailyForecasts = response.daily.slice(1, 6); // Only take next 5 days
+  const dailyForecasts = daily.slice(1, 6); // Only take next 5 days
 
   dailyForecasts.forEach((forecast, i) => {
-    const futureDate = $(`#future-date-${i + 1}`);
-    futureDate.text(moment.unix(forecast.dt).format("M/D/YYYY"));
-
-    const futureIcon = $(`#future-icon-${i + 1}`);
-    futureIcon.attr("src", `https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`);
-
-    const futureTemp = $(`#future-temp-${i + 1}`);
-    futureTemp.text(`Temp: ${forecast.temp.day} °F`);
-
-    const futureHumidity = $(`#future-humidity-${i + 1}`);
-    futureHumidity.text(`Humidity: ${forecast.humidity}%`);
+    $(`#future-date-${i + 1}`).text(moment.unix(forecast.dt).format("M/D/YYYY"));
+    $(`#future-icon-${i + 1}`).attr("src", `https://openweathermap.org/img/wn/${forecast.weather[0].icon}.png`);
+    $(`#future-temp-${i + 1}`).text(`Temp: ${forecast.temp.day} °F`);
+    $(`#future-humidity-${i + 1}`).text(`Humidity: ${forecast.humidity}%`);
   });
 };
 
@@ -83,19 +76,15 @@ const displayFiveDayForecast = (response) => {
 const fetchAndDisplayCurrentWeather = (cityName) => {
   fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${apiKey}`)
     .then(response => response.json())
-    .then(response => {
-      const { coord } = response;
-
-      fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${coord.lat}&lon=${coord.lon}&exclude=minutely,hourly,alerts&units=imperial&appid=${apiKey}`)
-        .then(response => response.json())
-        .then(data => {
-          displayCurrentWeather(data, cityName);
-          createSearchHistoryEntry(cityName);
-          saveSearchHistory();
-          displayFiveDayForecast(data);
-        });
+    .then(({ coord }) => fetch(`https://api.openweathermap.org/data/2.5/onecall?lat=${coord.lat}&lon=${coord.lon}&exclude=minutely,hourly,alerts&units=imperial&appid=${apiKey}`))
+    .then(response => response.json())
+    .then(data => {
+      displayCurrentWeather(data, cityName);
+      createSearchHistoryEntry(cityName);
+      saveSearchHistory();
+      displayFiveDayForecast(data);
     })
-    .catch((err) => {
+    .catch(() => {
       alert("We could not find the city you searched for. Try searching for a valid city.");
     });
 };
@@ -114,7 +103,7 @@ $("#search-form").on("submit", function (event) {
 });
 
 // Event listener for the search history entries
-$("#search-history-container").on("click", "p", function () {
+searchHistoryContainer.on("click", "p", function () {
   const cityName = $(this).text();
   fetchAndDisplayCurrentWeather(cityName);
   $(this).remove();
